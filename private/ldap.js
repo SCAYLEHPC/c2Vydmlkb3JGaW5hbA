@@ -78,7 +78,7 @@ exports.Login = {
       
       }); // client.bind  (reader account)
     });
-    resolve(JSON.stringify(authRes));
+
   }
   
 }
