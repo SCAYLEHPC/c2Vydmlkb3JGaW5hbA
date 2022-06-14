@@ -10,6 +10,9 @@ async function sendData(e) {
 	{
 		method: 'post',
 		body: JSON.stringify(user)
+	}).then(function(dataRes){
+		window.location.reload();
 	});
 	
+	document.getElementById("password").value = "";
 }

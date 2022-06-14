@@ -15,33 +15,67 @@ const LoginInterface = require(process.env.LOGIN_INTERFACE);
 const host = process.env.SERVER_IP_ADDR;
 const port = process.env.SERVER_PORT;
 
+var sessions = {};
+var sessionLifetime = 0.2;   // In minutes
+const uuid = require('uuid');
+var cookieParser = require("cookie-parser");
+app.use(cookieParser());
+
 
 if (process.env.NODE_ENV === "produccion") {
   app.use(express.static('public'));
   
   app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "public", "login.html"));
+  
+    if (sessions[req.cookies.sessionID] != undefined) {
+      
+      //sessionData = sessions[req.cookies.sessionID];
+      res.setHeader("Content-Type", "text/html");
+      res.sendFile(path.resolve(__dirname, "public", "encrypt-decrypt.html"));
+      
+    } else {
+      res.sendFile(path.resolve(__dirname, "public", "login.html")); 
+    }
   });
   
   app.post("/loginProcess", (req, res) => {
-    console.log("Datos de inicio de sesion recibidos: ");
     
     req.on('data', async function(chunk) {
-    
+      
       var loginUser = JSON.parse(chunk);
-      var res = LoginInterface.Login.authenticateUser(loginUser.name, loginUser.passw);
-      console.log(loginUser);
-      console.log(res);
+      //console.log("Datos de inicio de sesion recibidos: ");
+      //console.log(loginUser);
+      
+      var authRes = await LoginInterface.Login.authenticateUser(loginUser.name, loginUser.passw);      
+      var authResParsed = JSON.parse(authRes);
+      
+
+      if(authResParsed.resultado) {
+        // Login correcto => Redireccion al sitio + Cookie de sesion
+        console.log("Login correcto => User: "+loginUser.name);
+     
+        var sessionID = uuid.v1();
+        console.log("Sesion ID: "+sessionID);
+        sessions[sessionID] = authResParsed;
+
+        res.setHeader("Content-Type", "text/html");
+        res.setHeader("Set-Cookie", "sessionID="+sessionID+";maxAge= 1 * 60 * 1000");
+        res.redirect(200, "/");
+        
+      } else {
+        // Login incorrecto => Redireccion al login
+        console.log("Login incorrecto => User: "+loginUser.name);
+        res.redirect("./public/login.html");
+        res.end();
+      }
       
     });
-    
-    res.writeHead(200);
-    res.end();
+
   });
-  
+
   app.post("/postData", (req, res) => {
-    //Manage post to ALFRESCO && BLOCKCHAIN
-    
+
+    if (sessions[req.cookies.sessionID] != undefined) {
     	var ts = new Date();
     	console.log("POST request received on server side at "+ts);
     
@@ -53,7 +87,7 @@ if (process.env.NODE_ENV === "produccion") {
 	      	writeStream.write(chunk);
 	      	
 	});
-	 
+	
 	req.on('end', () => {
 	
 		writeStream.on('finish', () => {
@@ -75,8 +109,15 @@ if (process.env.NODE_ENV === "produccion") {
 	      	writeStream.end();
 	});
   
-    res.writeHead(200);
-    res.end();
+        res.writeHead(200);
+        res.send("Datos registrados");
+        res.end();
+        
+     } else {
+       console.log("Rececpcion de datos, pero usuario no autenticado");
+       res.setHeader("message", "Sesion caducada");
+       res.sendFile(path.resolve(__dirname, "public", "login.html"));
+    } 
   });
 }
 
@@ -85,6 +126,24 @@ https.createServer({key: fs0.readFileSync('certs/key.pem'), cert: fs0.readFileSy
   console.log('Server is running on https: '+host+':'+port);
   blockchainApp.App.init();
 });
+
+
+setInterval( () => periodicCheck(), sessionLifetime*60*1000);
+
+
+function periodicCheck() {
+  
+  
+  for(var sessionID in sessions) {
+    
+    if (sessions[sessionID].old) {
+      delete sessions[sessionID];
+    } else {
+      sessions[sessionID].old = true;
+      console.log("Session "+sessionID+" found set to old");
+    }
+  }
+}
 
 async function postToRep(file, fileName) {
 	
@@ -128,7 +187,6 @@ function doRequest() {
 		    "password":process.env.REP_TCK_PW
 		  }
 		};
-		
 		
 		request.post(options, (err, res, body) => {
 		  if (err) {

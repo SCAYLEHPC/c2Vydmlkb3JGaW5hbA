@@ -196,7 +196,7 @@ async function encryptfile() {
 	}
 	
 	
-	fetch('/postData',
+	await fetch('/postData',
 	{
 		method: 'post',
 		headers: {
@@ -204,6 +204,9 @@ async function encryptfile() {
 		  'jsonData': JSON.stringify(msg)
 		},
 		body: blobFile
+	}).then(function(dataRes) {
+		//alert(dataRes).headers['message'];
+		window.location.reload();
 	});
 	
 	console.log("Envio de datos del cliente\n");
