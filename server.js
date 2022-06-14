@@ -16,7 +16,7 @@ const host = process.env.SERVER_IP_ADDR;
 const port = process.env.SERVER_PORT;
 
 var sessions = {};
-var sessionLifetime = 0.2;   // In minutes
+var sessionLifetime = 5;   // In minutes
 const uuid = require('uuid');
 var cookieParser = require("cookie-parser");
 app.use(cookieParser());
@@ -95,7 +95,7 @@ if (process.env.NODE_ENV === "produccion") {
 	      	  postToRep(filePath, req.headers['headerfilename']).then(function() {
 	      	    
 	      	    var JSONdata = JSON.parse(req.headers['jsondata']);
-	      	    blockchainApp.App.registrarInvestigacion(JSONdata);
+	      	    //blockchainApp.App.registrarInvestigacion(JSONdata);
 	      	    
 	      	  })
 	      	  .catch(function(error) {
@@ -110,7 +110,6 @@ if (process.env.NODE_ENV === "produccion") {
 	});
   
         res.writeHead(200);
-        res.send("Datos registrados");
         res.end();
         
      } else {
