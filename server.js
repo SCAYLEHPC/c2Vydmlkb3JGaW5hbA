@@ -16,7 +16,7 @@ const host = process.env.SERVER_IP_ADDR;
 const port = process.env.SERVER_PORT;
 
 var sessions = {};
-var sessionLifetime = 5;   // In minutes
+var sessionLifetime = 0.5;   // In minutes
 const uuid = require('uuid');
 var cookieParser = require("cookie-parser");
 app.use(cookieParser());
@@ -29,13 +29,24 @@ if (process.env.NODE_ENV === "produccion") {
   
     if (sessions[req.cookies.sessionID] != undefined) {
       
-      //sessionData = sessions[req.cookies.sessionID];
       res.setHeader("Content-Type", "text/html");
       res.sendFile(path.resolve(__dirname, "public", "encrypt-decrypt.html"));
       
     } else {
       res.sendFile(path.resolve(__dirname, "public", "login.html")); 
     }
+  });
+  
+  app.post("/logout", (req, res) => {
+     
+    if (sessions[req.cookies.sessionID] != undefined) {
+      //Expire cookie
+      console.log("Expire cookie: "+req.cookies.sessionID);
+      delete sessions[req.cookies.sessionID];
+    } 
+    
+    res.set("customMessage", "User logged out");
+    res.sendFile(path.resolve(__dirname, "public", "login.html"));
   });
   
   app.post("/loginProcess", (req, res) => {
@@ -48,6 +59,8 @@ if (process.env.NODE_ENV === "produccion") {
       
       var authRes = await LoginInterface.Login.authenticateUser(loginUser.name, loginUser.passw);      
       var authResParsed = JSON.parse(authRes);
+      console.log("Parseo de respuesta del servidor: ");
+      console.log(authResParsed);
       
 
       if(authResParsed.resultado) {
@@ -76,46 +89,60 @@ if (process.env.NODE_ENV === "produccion") {
   app.post("/postData", (req, res) => {
 
     if (sessions[req.cookies.sessionID] != undefined) {
-    	var ts = new Date();
-    	console.log("POST request received on server side at "+ts);
-    
-      	var filePath = 'fileBackUp/' + req.headers['headerfilename'];      	
-	let writeStream = fs0.createWriteStream(filePath);
-    
-    	req.on('data', async function(chunk) {
-	        
-	      	writeStream.write(chunk);
-	      	
-	});
-	
-	req.on('end', () => {
-	
-		writeStream.on('finish', () => {
-	      	  
-	      	  postToRep(filePath, req.headers['headerfilename']).then(function() {
-	      	    
-	      	    var JSONdata = JSON.parse(req.headers['jsondata']);
-	      	    //blockchainApp.App.registrarInvestigacion(JSONdata);
-	      	    
-	      	  })
-	      	  .catch(function(error) {
-		    console.error("Error on transaction to Blockchain: "+error);
-		  });
-	      	})
-	      	.on('error', err => {
-	      	  console.error("Error on file save to server: "+err);
-	      	});
-	      	
-	      	writeStream.end();
-	});
-  
-        res.writeHead(200);
-        res.end();
-        
-     } else {
-       console.log("Rececpcion de datos, pero usuario no autenticado");
-       res.setHeader("message", "Sesion caducada");
-       res.sendFile(path.resolve(__dirname, "public", "login.html"));
+      var ts = new Date();
+      console.log("POST request received on server side at "+ts); 
+
+      //Datos del usuario que ha iniciado sesion
+      sessionData = sessions[req.cookies.sessionID];      
+      console.log("\n\nSession data:");
+      console.log(sessionData);
+      console.log("\n\n");
+
+      /*
+      var filePath = 'fileBackUp/' + req.headers['headerfilename'];      	
+      let writeStream = fs0.createWriteStream(filePath);
+
+      req.on('data', async function(chunk) {
+
+        writeStream.write(chunk);
+
+      });
+
+      req.on('end', () => {
+
+        writeStream.on('finish', () => {
+
+	  postToRep(filePath, req.headers['headerfilename']).then(function() {
+
+           var JSONdata = JSON.parse(req.headers['jsondata']);
+      
+           JSONdata.nombre_investigador = sessionData.nombre;
+           JSONdata.apellido1_investigador = sessionData.apellido1;
+           JSONdata.apellido2_investigador = sessionData.apellido2;
+           JSONdata.identificador_institucion = sessionData.IDinst;
+           JSONdata.nombre_institucion = sessionData.inst;
+           //blockchainApp.App.registrarInvestigacion(JSONdata);
+
+          })
+          .catch(function(error) {
+            console.error("Error on transaction to Blockchain: "+error);
+          });
+        })
+        .on('error', err => {
+          console.error("Error on file save to server: "+err);
+        });      	
+
+        writeStream.end();
+      });
+      */
+
+      res.writeHead(200);
+      res.end();
+
+    } else {
+      console.log("Rececpcion de datos, pero usuario no autenticado");
+      res.setHeader("message", "Sesion caducada");
+      res.sendFile(path.resolve(__dirname, "public", "login.html"));
     } 
   });
 }
@@ -131,11 +158,11 @@ setInterval( () => periodicCheck(), sessionLifetime*60*1000);
 
 
 function periodicCheck() {
-  
-  
+
   for(var sessionID in sessions) {
-    
+
     if (sessions[sessionID].old) {
+      console.log("Session "+sessionID+" expired");
       delete sessions[sessionID];
     } else {
       sessions[sessionID].old = true;
@@ -145,9 +172,9 @@ function periodicCheck() {
 }
 
 async function postToRep(file, fileName) {
-	
+
 	const repURL = await getAlfData();
-	
+
 	var r = request.post(repURL, function callback(err, httpResponse, body) {
 	    if(err || JSON.parse(body).error) {
 		return console.log('Upload failed: '+body)
@@ -166,12 +193,12 @@ async function getAlfData() {
 	var complete_url = '';
 	var alf_url = process.env.REP_URL;
 	var alf_tck = '';
-	
+
 	alf_tck = await doRequest();
-	  
+
 	complete_url += alf_url;
 	complete_url += alf_tck;
-	
+
 
 	return complete_url;
 }

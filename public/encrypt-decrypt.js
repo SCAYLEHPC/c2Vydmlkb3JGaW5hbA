@@ -270,3 +270,17 @@ async function decryptfile() {
 	spnDecstatus.innerHTML='<p>File decrypted.</p>';
 	aDecsavefile.hidden=false;
 }
+
+async function logout() {
+  
+  await fetch('/logout',
+  {
+  
+    method: 'post'
+    
+  }).then(function(dataRes) {
+    console.log("Res: ");
+    console.log(dataRes);
+    window.location.reload();
+  });
+}
