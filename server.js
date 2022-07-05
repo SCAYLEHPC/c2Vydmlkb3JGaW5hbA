@@ -59,8 +59,6 @@ if (process.env.NODE_ENV === "produccion") {
       
       var authRes = await LoginInterface.Login.authenticateUser(loginUser.name, loginUser.passw);      
       var authResParsed = JSON.parse(authRes);
-      console.log("Parseo de respuesta del servidor: ");
-      console.log(authResParsed);
       
 
       if(authResParsed.resultado) {
@@ -93,13 +91,10 @@ if (process.env.NODE_ENV === "produccion") {
       console.log("POST request received on server side at "+ts); 
 
       //Datos del usuario que ha iniciado sesion
-      sessionData = sessions[req.cookies.sessionID];      
-      console.log("\n\nSession data:");
-      console.log(sessionData);
-      console.log("\n\n");
-
-      /*
-      var filePath = 'fileBackUp/' + req.headers['headerfilename'];      	
+      sessionData = sessions[req.cookies.sessionID]; 
+      
+      
+      const filePath = 'fileBackUp/' + req.headers['headerfilename'];      	
       let writeStream = fs0.createWriteStream(filePath);
 
       req.on('data', async function(chunk) {
@@ -121,7 +116,8 @@ if (process.env.NODE_ENV === "produccion") {
            JSONdata.apellido2_investigador = sessionData.apellido2;
            JSONdata.identificador_institucion = sessionData.IDinst;
            JSONdata.nombre_institucion = sessionData.inst;
-           //blockchainApp.App.registrarInvestigacion(JSONdata);
+           
+           blockchainApp.App.registrarInvestigacion(JSON.stringify(JSONdata));
 
           })
           .catch(function(error) {
@@ -134,7 +130,7 @@ if (process.env.NODE_ENV === "produccion") {
 
         writeStream.end();
       });
-      */
+      
 
       res.writeHead(200);
       res.end();

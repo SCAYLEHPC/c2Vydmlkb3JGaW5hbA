@@ -3,26 +3,25 @@
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
+  "resolutions": {
+    "got": "^11.8.5"
+  },
   "scripts": {
+    "preinstall": "npx npm-force-resolutions",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/SCAYLEHPC/d2ViLXNlcnZlcjE.git"
-  },
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/SCAYLEHPC/d2ViLXNlcnZlcjE/issues"
-  },
-  "homepage": "https://github.com/SCAYLEHPC/d2ViLXNlcnZlcjE#readme",
   "dependencies": {
+    "@truffle/hdwallet-provider": "^2.0.10",
     "cookie-parser": "^1.4.6",
     "express": "^4.18.1",
+    "got": "^11.8.5",
     "ldapjs": "^2.3.2",
     "request": "^2.88.2",
     "uuid": "^8.3.2",
-    "web3": "^1.7.3"
-  }
+    "web3": "^1.7.4"
+  },
+  "devDependencies": {}
 }
