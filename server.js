@@ -16,7 +16,7 @@ const host = process.env.SERVER_IP_ADDR;
 const port = process.env.SERVER_PORT;
 
 var sessions = {};
-var sessionLifetime = 0.5;   // In minutes
+var sessionLifetime = 1;   // In minutes
 const uuid = require('uuid');
 var cookieParser = require("cookie-parser");
 app.use(cookieParser());
@@ -94,42 +94,53 @@ if (process.env.NODE_ENV === "produccion") {
       sessionData = sessions[req.cookies.sessionID]; 
       
       
-      const filePath = 'fileBackUp/' + req.headers['headerfilename'];      	
-      let writeStream = fs0.createWriteStream(filePath);
-
-      req.on('data', async function(chunk) {
-
-        writeStream.write(chunk);
-
-      });
-
-      req.on('end', () => {
-
-        writeStream.on('finish', () => {
-
-	  postToRep(filePath, req.headers['headerfilename']).then(function() {
-
-           var JSONdata = JSON.parse(req.headers['jsondata']);
+      const filePath = 'fileBackUp/' + req.headers['headerfilename'];
+      let pattern = process.env.REGEX_FILE;
+      let result = pattern.test(filePath);
       
-           JSONdata.nombre_investigador = sessionData.nombre;
-           JSONdata.apellido1_investigador = sessionData.apellido1;
-           JSONdata.apellido2_investigador = sessionData.apellido2;
-           JSONdata.identificador_institucion = sessionData.IDinst;
-           JSONdata.nombre_institucion = sessionData.inst;
+      if(result) {
+      
+        let writeStream = fs0.createWriteStream(filePath);
+
+        
+        req.on('data', async function(chunk) {
+
+          writeStream.write(chunk);
+
+        });
+      
+        req.on('end', () => {
+
+          writeStream.on('finish', () => {
+
+	    postToRep(filePath, req.headers['headerfilename']).then(function() {
+
+              var JSONdata = JSON.parse(req.headers['jsondata']);
+      
+              JSONdata.nombre_investigador = sessionData.nombre;
+              JSONdata.apellido1_investigador = sessionData.apellido1;
+              JSONdata.apellido2_investigador = sessionData.apellido2;
+              JSONdata.identificador_institucion = sessionData.IDinst;
+              JSONdata.nombre_institucion = sessionData.inst;
            
-           blockchainApp.App.registrarInvestigacion(JSON.stringify(JSONdata));
+              blockchainApp.App.registrarInvestigacion(JSON.stringify(JSONdata));
 
+            })
+            .catch(function(error) {
+              console.error("Error on transaction to Blockchain: "+error);
+            });
           })
-          .catch(function(error) {
-            console.error("Error on transaction to Blockchain: "+error);
-          });
-        })
-        .on('error', err => {
-          console.error("Error on file save to server: "+err);
-        });      	
+          .on('error', err => {
+            console.error("Error on file save to server: "+err);
+          });      	
 
-        writeStream.end();
-      });
+          writeStream.end();
+        });
+        
+      }
+      else {
+        console.log("Nombre del fichero invalido, peticion rechazada.");
+      }
       
 
       res.writeHead(200);

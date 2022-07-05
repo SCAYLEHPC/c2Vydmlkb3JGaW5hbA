@@ -114,7 +114,8 @@ async function encryptfile() {
 	var plaintextbytes=await readfile(objFile)
 	.catch(function(err){
 		console.error(err);
-	});	
+	});
+	
 	plaintextbytes=new Uint8Array(plaintextbytes);
 
 	var pbkdf2iterations=10000;
